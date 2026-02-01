@@ -1,0 +1,18 @@
+{
+  "name": "spectre-test",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:swap": "tsx src/fullPrivateSwap.ts"
+  },
+  "dependencies": {
+    "@spectre-protocol/sdk": "file:../spectre-sdk",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.2"
+  }
+}
