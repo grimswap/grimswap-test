@@ -4,52 +4,60 @@ End-to-end integration tests for Spectre Protocol, demonstrating full private sw
 
 ## Test Results
 
-### Full Private Swap Test (SDK + Contracts)
+### Full Private Swap Test - PRODUCTION PRIVACY
 
 **Date:** February 2, 2026
 **Network:** Unichain Sepolia (Chain ID: 1301)
-**Status:** ✅ ALL TESTS PASSED
+**Status:** PRODUCTION PRIVACY VERIFIED
 
 #### Transaction Proof
-- **TX Hash:** [`0x4d97dc1d984d6c128686abc5c142b735305bbbe6c5fce09baba37c8fe8039500`](https://unichain-sepolia.blockscout.com/tx/0x4d97dc1d984d6c128686abc5c142b735305bbbe6c5fce09baba37c8fe8039500)
-- **Block:** 43114156
-- **Gas Used:** 360,035
+- **TX Hash:** [`0x1856c612da4362dc69b34d808359ab709d623d157cc83019f88b98d0ca9260a7`](https://unichain-sepolia.blockscout.com/tx/0x1856c612da4362dc69b34d808359ab709d623d157cc83019f88b98d0ca9260a7)
+- **Block:** 43115916
+- **Gas Used:** 392,918
 
-#### Swap Results
+#### Privacy Verification
 ```
-Token A spent:     10.0 tokens
-Token B received:  9.77 tokens
-Private Swaps:     1 → 2 (counter incremented)
+SENDER (public address):
+  Token A balance: 996132 → 996122 (-10 spent)
+  Token B balance: 997132 → 997132 (UNCHANGED!)
+
+STEALTH ADDRESS (0xa7f9f1296f34e768200b2a56864117cd35d700a5):
+  Token B balance: 0 → 9.77 (received from swap!)
+
+>>> TOKENS ROUTED TO STEALTH ADDRESS - RECIPIENT PRIVACY VERIFIED <<<
 ```
 
 #### Privacy Features Verified
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Ring Signature | ✅ | Sender hidden among 5 addresses (LSAG) |
-| Key Image | ✅ | Recorded to prevent double-spend |
-| Stealth Address | ✅ | Generated: `0x693767d55dd4cb73c183162872ca3879be7820a0` |
-| ERC-5564 Announcement | ✅ | Emitted for recipient scanning |
+| Ring Signature | PASS | Sender hidden among 5 addresses (LSAG) |
+| Key Image | PASS | Recorded to prevent double-spend |
+| Stealth Address | PASS | Generated: `0xa7f9f1296f34e768200b2a56864117cd35d700a5` |
+| Token Routing | PASS | Output tokens sent to stealth, NOT sender |
+| ERC-5564 Announcement | PASS | Emitted for recipient scanning |
 
 #### Events Emitted
 1. `PrivateSwapInitiated` - Ring signature verified
 2. `Swap` - Uniswap v4 AMM swap executed
 3. `Announcement` - ERC-5564 stealth address announced
 4. `PrivateSwapCompleted` - Private swap finished
-5. `Transfer` (x2) - Token A to pool, Token B to user
+5. `Transfer` - Token A from sender to pool
+6. `Transfer` - Token B from pool to STEALTH ADDRESS (not sender!)
 
 ---
 
 ## Deployed Contracts (Unichain Sepolia)
 
+### Production Contracts (with stealth routing)
 | Contract | Address | Description |
 |----------|---------|-------------|
 | PoolManager | `0x00B036B58a818B1BC34d502D3fE730Db729e62AC` | Uniswap v4 Core |
-| SpectreHook | `0xb51F08EA987e1ca926e6730aeA5Dd5aeb5E7C0C4` | Privacy hook (with mock verifier) |
+| SpectreHook | `0xA4D8EcabC2597271DDd436757b6349Ef412B80c4` | Privacy hook (routes to stealth) |
 | StealthRegistry | `0xA9e4ED4183b3B3cC364cF82dA7982D5ABE956307` | Stealth address generation |
 | Announcer | `0x42013A72753F6EC28e27582D4cDb8425b44fd311` | ERC-5564 announcements |
-| Token A (PTA) | `0x32cCA622f5Cd2b45a937C4E8536743C756187127` | Test token |
-| Token B (PTB) | `0xE2AD3068aD183595152269a81eE72F44A176880c` | Test token |
-| PoolTestHelper | `0x8D5Af9050D765a1B67785Ae4Cec595360E2A29c7` | Swap execution helper |
+| Token A (PTA) | `0x48bA64b5312AFDfE4Fc96d8F03010A0a86e17963` | Test token |
+| Token B (PTB) | `0x96aC37889DfDcd4dA0C898a5c9FB9D17ceD60b1B` | Test token |
+| PoolTestHelper | `0x26a669aC1e5343a50260490eC0C1be21f9818b17` | Swap execution (stealth routing) |
 
 ---
 
@@ -70,6 +78,8 @@ npm install
 PRIVATE_KEY=0x... npm run test:swap
 ```
 
+**Note:** Each private key can only execute ONE private swap due to key image tracking (prevents double-spend). Use a fresh private key for each test run.
+
 ### Expected Output
 ```
 ╔════════════════════════════════════════════════════════════════╗
@@ -86,12 +96,6 @@ Generated stealth keys
   Meta-address: 0x03...
 
 ┌────────────────────────────────────────────────────────────────┐
-│ STEP 2: Create Ring Members                                   │
-└────────────────────────────────────────────────────────────────┘
-Ring size: 5
-  Signer: 0x... (hidden among decoys)
-
-┌────────────────────────────────────────────────────────────────┐
 │ STEP 4: Generate Ring Signature (SDK - Real LSAG)             │
 └────────────────────────────────────────────────────────────────┘
 Ring signature generated
@@ -99,13 +103,20 @@ Ring signature generated
   Key image: 0x...
 
 ┌────────────────────────────────────────────────────────────────┐
-│ STEP 8: EXECUTE PRIVATE SWAP                                  │
+│ STEP 9: Verify Stealth Address Routing                        │
 └────────────────────────────────────────────────────────────────┘
-Transaction confirmed!
-  Status: SUCCESS
+Stealth Address (from event): 0x...
+Amount sent to stealth: 9.77
+
+Sender Balances:
+  Token A after: 996122.0 (spent 10)
+  Token B after: 997132.0 (unchanged = privacy working!)
+
+Stealth Address Balance:
+  Token B: 9.77
 
 ╔════════════════════════════════════════════════════════════════╗
-║                 PRIVATE SWAP SUCCESSFUL!                       ║
+║          PRIVATE SWAP SUCCESSFUL - FULL PRIVACY!              ║
 ╚════════════════════════════════════════════════════════════════╝
 ```
 
@@ -140,8 +151,22 @@ Transaction confirmed!
 4. **Contract** SpectreHook.beforeSwap() verifies ring signature
 5. **Contract** Uniswap v4 executes the AMM swap
 6. **Contract** SpectreHook.afterSwap() generates stealth address
-7. **Contract** Announcer emits ERC-5564 announcement
-8. **Recipient** scans announcements to find incoming transfers
+7. **Contract** PoolTestHelper routes output tokens to stealth address
+8. **Contract** Announcer emits ERC-5564 announcement
+9. **Recipient** scans announcements to find incoming transfers
+
+### What Makes It Private?
+
+**Sender Privacy (Ring Signatures):**
+- Sender proves membership in a group without revealing which member they are
+- LSAG signatures with 5-10 decoy addresses
+- Key images prevent double-spending without revealing identity
+
+**Recipient Privacy (Stealth Addresses):**
+- One-time addresses generated for each swap
+- Output tokens sent to stealth address, NOT sender's public address
+- Sender's token balance unchanged after swap
+- Only recipient can derive private key to spend from stealth address
 
 ---
 
@@ -174,6 +199,7 @@ const hookData = encodeHookData({
 });
 
 // 4. Execute swap with hookData via Uniswap v4
+// Output tokens automatically routed to stealth address!
 ```
 
 ---

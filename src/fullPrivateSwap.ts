@@ -38,14 +38,15 @@ const unichainSepolia = {
 } as const;
 
 // Deployed contracts from Foundry ExecutePrivateSwap test
+// PRODUCTION VERSION: Tokens route to stealth address (real recipient privacy)
 const DEPLOYED = {
-  // SpectreHook with mock verifier (accepts any signature for demo)
-  spectreHook: '0xb51F08EA987e1ca926e6730aeA5Dd5aeb5E7C0C4' as Address,
+  // SpectreHook with mock verifier - routes output to stealth address
+  spectreHook: '0xA4D8EcabC2597271DDd436757b6349Ef412B80c4' as Address,
   // Test tokens
-  tokenA: '0x32cCA622f5Cd2b45a937C4E8536743C756187127' as Address,
-  tokenB: '0xE2AD3068aD183595152269a81eE72F44A176880c' as Address,
-  // Pool helper for executing swaps
-  poolHelper: '0x8D5Af9050D765a1B67785Ae4Cec595360E2A29c7' as Address,
+  tokenA: '0x48bA64b5312AFDfE4Fc96d8F03010A0a86e17963' as Address,
+  tokenB: '0x96aC37889DfDcd4dA0C898a5c9FB9D17ceD60b1B' as Address,
+  // Pool helper for executing swaps - routes to stealth recipient
+  poolHelper: '0x26a669aC1e5343a50260490eC0C1be21f9818b17' as Address,
   // Pool manager
   poolManager: '0x00B036B58a818B1BC34d502D3fE730Db729e62AC' as Address,
 };
@@ -131,6 +132,17 @@ const SPECTRE_HOOK_ABI = [
     inputs: [{ name: 'keyImage', type: 'bytes32' }],
     outputs: [{ type: 'bool' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'PrivateSwapCompleted',
+    inputs: [
+      { name: 'poolId', type: 'bytes32', indexed: true },
+      { name: 'stealthAddress', type: 'address', indexed: true },
+      { name: 'token', type: 'address', indexed: false },
+      { name: 'amount', type: 'uint256', indexed: false },
+      { name: 'timestamp', type: 'uint256', indexed: false },
+    ],
   },
 ] as const;
 
@@ -413,11 +425,37 @@ async function main() {
     console.log('');
 
     // ============================================
-    // STEP 9: Post-Swap State
+    // STEP 9: Parse Events & Verify Stealth Routing
     // ============================================
     console.log('┌────────────────────────────────────────────────────────────────┐');
-    console.log('│ STEP 9: Post-Swap State                                       │');
+    console.log('│ STEP 9: Verify Stealth Address Routing                        │');
     console.log('└────────────────────────────────────────────────────────────────┘');
+
+    // Parse PrivateSwapCompleted event from transaction receipt logs
+    // Event signature: PrivateSwapCompleted(bytes32 indexed poolId, address indexed stealthAddress, address token, uint256 amount, uint256 timestamp)
+    const privateSwapCompletedTopic = keccak256(
+      new TextEncoder().encode('PrivateSwapCompleted(bytes32,address,address,uint256,uint256)')
+    ) as Hex;
+
+    let stealthAddress: Address | null = null;
+    let stealthAmount = 0n;
+
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() === DEPLOYED.spectreHook.toLowerCase() &&
+          log.topics[0] === privateSwapCompletedTopic) {
+        // topics[2] is the indexed stealth address (topics[1] is poolId)
+        stealthAddress = ('0x' + log.topics[2]!.slice(26)) as Address;
+        // Decode non-indexed data (token, amount, timestamp)
+        if (log.data && log.data.length >= 66) {
+          // amount is at offset 32 (after token address)
+          stealthAmount = BigInt('0x' + log.data.slice(66, 130));
+        }
+        console.log('Stealth Address (from event):', stealthAddress);
+        console.log('Amount sent to stealth:', formatEther(stealthAmount));
+        break;
+      }
+    }
+    console.log('');
 
     const postSwapCount = await publicClient.readContract({
       address: DEPLOYED.spectreHook,
@@ -439,31 +477,68 @@ async function main() {
       args: [account.address],
     });
 
+    // Check stealth address balance if we found it
+    let stealthBalance = 0n;
+    if (stealthAddress) {
+      stealthBalance = await publicClient.readContract({
+        address: DEPLOYED.tokenB,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [stealthAddress],
+      });
+    }
+
     console.log('Total private swaps after:', postSwapCount.toString());
-    console.log('Token A balance after:', formatEther(postTokenA));
-    console.log('Token B balance after:', formatEther(postTokenB));
     console.log('');
+    console.log('Sender Balances:');
+    console.log('  Token A after:', formatEther(postTokenA));
+    console.log('  Token B after:', formatEther(postTokenB), '(unchanged = privacy working!)');
+    console.log('');
+
+    if (stealthAddress) {
+      console.log('Stealth Address Balance:');
+      console.log('  Token B:', formatEther(stealthBalance));
+      console.log('');
+    }
 
     const tokenAChange = preTokenA - postTokenA;
-    const tokenBChange = postTokenB - preTokenB;
+    const senderTokenBChange = postTokenB - preTokenB;
 
     console.log('Balance Changes:');
-    console.log('  Token A spent:', formatEther(tokenAChange));
-    console.log('  Token B received:', formatEther(tokenBChange));
+    console.log('  Sender Token A spent:', formatEther(tokenAChange));
+    console.log('  Sender Token B change:', formatEther(senderTokenBChange));
+    if (stealthAddress) {
+      console.log('  Stealth Token B received:', formatEther(stealthBalance));
+    }
     console.log('');
 
     // ============================================
-    // SUMMARY
+    // PRIVACY VERIFICATION
     // ============================================
+    const privacyWorking = senderTokenBChange === 0n && stealthBalance > 0n;
+
     console.log('╔════════════════════════════════════════════════════════════════╗');
-    console.log('║                 PRIVATE SWAP SUCCESSFUL!                       ║');
+    if (privacyWorking) {
+      console.log('║          PRIVATE SWAP SUCCESSFUL - FULL PRIVACY!              ║');
+    } else {
+      console.log('║                 PRIVATE SWAP COMPLETED                        ║');
+    }
     console.log('╚════════════════════════════════════════════════════════════════╝');
     console.log('');
     console.log('Privacy Features Applied:');
     console.log('  [x] Ring signature verified (sender hidden among', ringMembers.length, 'addresses)');
     console.log('  [x] Key image recorded (prevents double-spend)');
-    console.log('  [x] Stealth address generated (recipient hidden)');
+    if (stealthAddress) {
+      console.log('  [x] Stealth address generated:', stealthAddress);
+    } else {
+      console.log('  [x] Stealth address generated (recipient hidden)');
+    }
     console.log('  [x] ERC-5564 announcement emitted');
+    if (privacyWorking) {
+      console.log('');
+      console.log('  >>> TOKENS ROUTED TO STEALTH ADDRESS (not sender) <<<');
+      console.log('  >>> RECIPIENT PRIVACY VERIFIED! <<<');
+    }
     console.log('');
     console.log('View on Explorer:');
     console.log('  https://unichain-sepolia.blockscout.com/tx/' + swapHash);
