@@ -1,6 +1,6 @@
-# Spectre Protocol - Integration Tests
+# GrimSwap - Integration Tests
 
-End-to-end integration tests for Spectre Protocol, demonstrating full private swaps using the SDK with on-chain contracts.
+End-to-end integration tests for GrimSwap, demonstrating full private swaps using the SDK with on-chain contracts.
 
 ## Test Results
 
@@ -52,7 +52,7 @@ STEALTH ADDRESS (0xa7f9f1296f34e768200b2a56864117cd35d700a5):
 | Contract | Address | Description |
 |----------|---------|-------------|
 | PoolManager | `0x00B036B58a818B1BC34d502D3fE730Db729e62AC` | Uniswap v4 Core |
-| SpectreHook | `0xA4D8EcabC2597271DDd436757b6349Ef412B80c4` | Privacy hook (routes to stealth) |
+| GrimHook | `0xA4D8EcabC2597271DDd436757b6349Ef412B80c4` | Privacy hook (routes to stealth) |
 | StealthRegistry | `0xA9e4ED4183b3B3cC364cF82dA7982D5ABE956307` | Stealth address generation |
 | Announcer | `0x42013A72753F6EC28e27582D4cDb8425b44fd311` | ERC-5564 announcements |
 | Token A (PTA) | `0x48bA64b5312AFDfE4Fc96d8F03010A0a86e17963` | Test token |
@@ -83,7 +83,7 @@ PRIVATE_KEY=0x... npm run test:swap
 ### Expected Output
 ```
 ╔════════════════════════════════════════════════════════════════╗
-║     SPECTRE PROTOCOL - FULL PRIVATE SWAP TEST (SDK)            ║
+║       GRIMSWAP - FULL PRIVATE SWAP TEST (SDK)                  ║
 ╚════════════════════════════════════════════════════════════════╝
 
 Network: Unichain Sepolia (Chain ID: 1301)
@@ -126,17 +126,17 @@ Stealth Address Balance:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        SPECTRE PROTOCOL                         │
+│                          GRIMSWAP                               │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐ │
 │  │  Test Script│───▶│  SDK        │───▶│  Smart Contracts    │ │
-│  │  (This Repo)│    │  (spectre-  │    │  (spectre-          │ │
+│  │  (This Repo)│    │  (grimswap- │    │  (grimswap-         │ │
 │  │             │    │   sdk)      │    │   contracts)        │ │
 │  └─────────────┘    └─────────────┘    └─────────────────────┘ │
 │                                                                 │
 │  Test Functions:                    Contracts:                  │
-│  • generateStealthKeys()            • SpectreHook (Uni v4)     │
+│  • generateStealthKeys()            • GrimHook (Uni v4)        │
 │  • generateRingSignature()          • RingVerifier (LSAG)      │
 │  • encodeHookData()                 • StealthRegistry          │
 │  • Execute swap via viem            • Announcer (ERC-5564)     │
@@ -148,9 +148,9 @@ Stealth Address Balance:
 1. **SDK** generates stealth keys for recipient
 2. **SDK** creates LSAG ring signature (hides sender among decoys)
 3. **SDK** encodes hook data with signature + stealth meta-address
-4. **Contract** SpectreHook.beforeSwap() verifies ring signature
+4. **Contract** GrimHook.beforeSwap() verifies ring signature
 5. **Contract** Uniswap v4 executes the AMM swap
-6. **Contract** SpectreHook.afterSwap() generates stealth address
+6. **Contract** GrimHook.afterSwap() generates stealth address
 7. **Contract** PoolTestHelper routes output tokens to stealth address
 8. **Contract** Announcer emits ERC-5564 announcement
 9. **Recipient** scans announcements to find incoming transfers
@@ -177,7 +177,7 @@ import {
   generateStealthKeys,
   generateRingSignature,
   encodeHookData,
-} from '@spectre-protocol/sdk';
+} from '@grimswap/sdk';
 
 // 1. Generate recipient's stealth keys
 const recipientKeys = generateStealthKeys();
@@ -206,8 +206,8 @@ const hookData = encodeHookData({
 
 ## Related Repositories
 
-- **[spectre-sdk](https://github.com/spectre-protocol/spectre-sdk)** - TypeScript SDK for privacy primitives
-- **[spectre-contracts](https://github.com/spectre-protocol/spectre-contracts)** - Solidity smart contracts
+- **[grimswap-sdk](https://github.com/grimswap/grimswap-sdk)** - TypeScript SDK for privacy primitives
+- **[grimswap-contracts](https://github.com/grimswap/grimswap-contracts)** - Solidity smart contracts
 
 ---
 

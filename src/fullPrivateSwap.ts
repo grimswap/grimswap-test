@@ -1,11 +1,11 @@
 /**
- * SPECTRE PROTOCOL - Full Private Swap Test (SDK)
+ * GRIMSWAP - Full Private Swap Test (SDK)
  *
  * This script executes a REAL private swap on Unichain Sepolia using:
  * 1. SDK for stealth key generation
  * 2. SDK for LSAG ring signature
  * 3. SDK for hook data encoding
- * 4. On-chain swap through SpectreHook
+ * 4. On-chain swap through GrimHook
  *
  * Run: PRIVATE_KEY=0x... npm run test:swap
  */
@@ -26,7 +26,7 @@ import {
   generateStealthKeys,
   generateRingSignature,
   encodeHookData,
-} from '@spectre-protocol/sdk';
+} from '@grimswap/sdk';
 
 // Chain config
 const unichainSepolia = {
@@ -40,8 +40,8 @@ const unichainSepolia = {
 // Deployed contracts from Foundry ExecutePrivateSwap test
 // PRODUCTION VERSION: Tokens route to stealth address (real recipient privacy)
 const DEPLOYED = {
-  // SpectreHook with mock verifier - routes output to stealth address
-  spectreHook: '0xA4D8EcabC2597271DDd436757b6349Ef412B80c4' as Address,
+  // GrimHook with mock verifier - routes output to stealth address
+  grimHook: '0xA4D8EcabC2597271DDd436757b6349Ef412B80c4' as Address,
   // Test tokens
   tokenA: '0x48bA64b5312AFDfE4Fc96d8F03010A0a86e17963' as Address,
   tokenB: '0x96aC37889DfDcd4dA0C898a5c9FB9D17ceD60b1B' as Address,
@@ -57,7 +57,7 @@ const POOL_KEY = {
   currency1: DEPLOYED.tokenB,
   fee: 3000,
   tickSpacing: 60,
-  hooks: DEPLOYED.spectreHook,
+  hooks: DEPLOYED.grimHook,
 };
 
 // ABIs
@@ -118,7 +118,7 @@ const POOL_HELPER_ABI = [
   },
 ] as const;
 
-const SPECTRE_HOOK_ABI = [
+const GRIM_HOOK_ABI = [
   {
     type: 'function',
     name: 'totalPrivateSwaps',
@@ -165,7 +165,7 @@ function computePoolId(key: typeof POOL_KEY): Hex {
 async function main() {
   console.log('');
   console.log('╔════════════════════════════════════════════════════════════════╗');
-  console.log('║     SPECTRE PROTOCOL - FULL PRIVATE SWAP TEST (SDK)            ║');
+  console.log('║       GRIMSWAP - FULL PRIVATE SWAP TEST (SDK)                  ║');
   console.log('╚════════════════════════════════════════════════════════════════╝');
   console.log('');
 
@@ -295,7 +295,7 @@ async function main() {
         { type: 'uint256' },
         { type: 'address' },
       ],
-      [poolId, zeroForOne, -swapAmount, 1301n, DEPLOYED.spectreHook]
+      [poolId, zeroForOne, -swapAmount, 1301n, DEPLOYED.grimHook]
     )
   );
 
@@ -357,8 +357,8 @@ async function main() {
   console.log('└────────────────────────────────────────────────────────────────┘');
 
   const preSwapCount = await publicClient.readContract({
-    address: DEPLOYED.spectreHook,
-    abi: SPECTRE_HOOK_ABI,
+    address: DEPLOYED.grimHook,
+    abi: GRIM_HOOK_ABI,
     functionName: 'totalPrivateSwaps',
   });
 
@@ -441,7 +441,7 @@ async function main() {
     let stealthAmount = 0n;
 
     for (const log of receipt.logs) {
-      if (log.address.toLowerCase() === DEPLOYED.spectreHook.toLowerCase() &&
+      if (log.address.toLowerCase() === DEPLOYED.grimHook.toLowerCase() &&
           log.topics[0] === privateSwapCompletedTopic) {
         // topics[2] is the indexed stealth address (topics[1] is poolId)
         stealthAddress = ('0x' + log.topics[2]!.slice(26)) as Address;
@@ -458,8 +458,8 @@ async function main() {
     console.log('');
 
     const postSwapCount = await publicClient.readContract({
-      address: DEPLOYED.spectreHook,
-      abi: SPECTRE_HOOK_ABI,
+      address: DEPLOYED.grimHook,
+      abi: GRIM_HOOK_ABI,
       functionName: 'totalPrivateSwaps',
     });
 

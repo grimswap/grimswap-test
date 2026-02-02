@@ -1,5 +1,5 @@
 {
-  "name": "spectre-test",
+  "name": "grimswap-test",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -7,7 +7,7 @@
     "test:swap": "tsx src/fullPrivateSwap.ts"
   },
   "dependencies": {
-    "@spectre-protocol/sdk": "file:../spectre-sdk",
+    "@grimswap/sdk": "file:../grimswap-sdk",
     "viem": "^2.21.0"
   },
   "devDependencies": {
