@@ -9,7 +9,8 @@
     "test:zk:onchain": "tsx src/zkOnChainTest.ts",
     "deploy:hook": "tsx src/deployHook.ts",
     "test:fullswap": "tsx src/fullPrivateSwapZK.ts",
-    "test:timing": "tsx src/timingTest.ts"
+    "test:timing": "tsx src/timingTest.ts",
+    "test:zkswap": "tsx src/fullZKSwap.ts"
   },
   "dependencies": {
     "@grimswap/sdk": "file:../grimswap-sdk",

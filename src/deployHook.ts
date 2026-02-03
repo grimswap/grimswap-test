@@ -39,8 +39,8 @@ const unichainSepolia = {
 
 // Addresses
 const POOL_MANAGER = "0x00B036B58a818B1BC34d502D3fE730Db729e62AC" as Address;
-const GRIM_POOL = "0x0102Ba64Eefdbf362E402B9dCe0Cf9edfab611f5" as Address;
-const GROTH16_VERIFIER = "0x2AAaCece42E8ec7C6066D547C81a9e7cF09dBaeA" as Address;
+const GRIM_POOL = "0xad079eAC28499c4eeA5C02D2DE1C81E56b9AA090" as Address;
+const GROTH16_VERIFIER = "0xF7D14b744935cE34a210D7513471a8E6d6e696a0" as Address;
 
 // Hook flags (from Hooks.sol)
 const BEFORE_SWAP_FLAG = 1n << 7n;           // 0x0080
