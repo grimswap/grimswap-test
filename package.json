@@ -6,7 +6,9 @@
   "scripts": {
     "test:swap": "tsx src/fullPrivateSwap.ts",
     "test:zk": "tsx src/zkPrivateSwap.ts",
-    "test:zk:onchain": "tsx src/zkOnChainTest.ts"
+    "test:zk:onchain": "tsx src/zkOnChainTest.ts",
+    "deploy:hook": "tsx src/deployHook.ts",
+    "test:fullswap": "tsx src/fullPrivateSwapZK.ts"
   },
   "dependencies": {
     "@grimswap/sdk": "file:../grimswap-sdk",
