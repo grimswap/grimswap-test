@@ -1,18 +1,56 @@
 # GrimSwap - Integration Tests
 
-End-to-end integration tests for GrimSwap, demonstrating full private swaps using the SDK with on-chain contracts.
+End-to-end integration tests for GrimSwap privacy-preserving swaps on Uniswap v4.
 
-## Test Results
+## Test Results Summary
 
-### Full Private Swap Test - PRODUCTION PRIVACY
+### ZK-SNARK Private Swap (Groth16) - RECOMMENDED
+
+**Date:** February 3, 2026
+**Network:** Unichain Sepolia (Chain ID: 1301)
+**Status:** ALL TESTS PASSED
+
+#### Timing Breakdown
+
+| Step | Time |
+|------|------|
+| Initialize Poseidon | 215 ms |
+| Create deposit note | 3 ms |
+| Submit deposit tx | 3,601 ms |
+| Wait for confirmation | 282 ms |
+| Build Merkle tree + proof | 5 ms |
+| **Generate ZK proof** | **956 ms** |
+| On-chain verification | 293 ms |
+| Encode hook data | 0 ms |
+| **TOTAL** | **5,355 ms (~5.4 seconds)** |
+
+#### Transaction Proofs
+
+| Test | TX Hash | Gas Used |
+|------|---------|----------|
+| Deposit to GrimPool | [`0x42e735ac8a4ab9957d5c5d6e5afae9c604b1258d21e894252ab4957e17af4878`](https://unichain-sepolia.blockscout.com/tx/0x42e735ac8a4ab9957d5c5d6e5afae9c604b1258d21e894252ab4957e17af4878) | 219,515 |
+| Full Swap Deposit | [`0x93ac2a94fe8b6164a2ad9ec8d1be3c4e3d22547d8d221ef0f581f251d20ab90d`](https://unichain-sepolia.blockscout.com/tx/0x93ac2a94fe8b6164a2ad9ec8d1be3c4e3d22547d8d221ef0f581f251d20ab90d) | 224,518 |
+
+#### Privacy Features Verified
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| ZK Proof Generation | PASS | Groth16 proof in ~1 second |
+| On-chain Verification | PASS | Proof verified by Groth16Verifier |
+| Poseidon Commitment | PASS | ZK-friendly hash for deposits |
+| Merkle Tree | PASS | 20 levels (supports ~1M deposits) |
+| Nullifier | PASS | Prevents double-spend |
+| Hook Data Encoding | PASS | 1,026 bytes proof for swap |
+
+---
+
+### Ring Signature Private Swap (Legacy)
 
 **Date:** February 2, 2026
-**Network:** Unichain Sepolia (Chain ID: 1301)
-**Status:** PRODUCTION PRIVACY VERIFIED
+**Status:** PRODUCTION VERIFIED
 
 #### Transaction Proof
 - **TX Hash:** [`0x1856c612da4362dc69b34d808359ab709d623d157cc83019f88b98d0ca9260a7`](https://unichain-sepolia.blockscout.com/tx/0x1856c612da4362dc69b34d808359ab709d623d157cc83019f88b98d0ca9260a7)
-- **Block:** 43115916
 - **Gas Used:** 392,918
 
 #### Privacy Verification
@@ -27,187 +65,194 @@ STEALTH ADDRESS (0xa7f9f1296f34e768200b2a56864117cd35d700a5):
 >>> TOKENS ROUTED TO STEALTH ADDRESS - RECIPIENT PRIVACY VERIFIED <<<
 ```
 
-#### Privacy Features Verified
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Ring Signature | PASS | Sender hidden among 5 addresses (LSAG) |
-| Key Image | PASS | Recorded to prevent double-spend |
-| Stealth Address | PASS | Generated: `0xa7f9f1296f34e768200b2a56864117cd35d700a5` |
-| Token Routing | PASS | Output tokens sent to stealth, NOT sender |
-| ERC-5564 Announcement | PASS | Emitted for recipient scanning |
-
-#### Events Emitted
-1. `PrivateSwapInitiated` - Ring signature verified
-2. `Swap` - Uniswap v4 AMM swap executed
-3. `Announcement` - ERC-5564 stealth address announced
-4. `PrivateSwapCompleted` - Private swap finished
-5. `Transfer` - Token A from sender to pool
-6. `Transfer` - Token B from pool to STEALTH ADDRESS (not sender!)
-
 ---
 
 ## Deployed Contracts (Unichain Sepolia)
 
-### Production Contracts (with stealth routing)
+### ZK Contracts (Recommended)
+
 | Contract | Address | Description |
 |----------|---------|-------------|
-| PoolManager | `0x00B036B58a818B1BC34d502D3fE730Db729e62AC` | Uniswap v4 Core |
-| GrimHook | `0xA4D8EcabC2597271DDd436757b6349Ef412B80c4` | Privacy hook (routes to stealth) |
-| StealthRegistry | `0xA9e4ED4183b3B3cC364cF82dA7982D5ABE956307` | Stealth address generation |
-| Announcer | `0x42013A72753F6EC28e27582D4cDb8425b44fd311` | ERC-5564 announcements |
-| Token A (PTA) | `0x48bA64b5312AFDfE4Fc96d8F03010A0a86e17963` | Test token |
-| Token B (PTB) | `0x96aC37889DfDcd4dA0C898a5c9FB9D17ceD60b1B` | Test token |
-| PoolTestHelper | `0x26a669aC1e5343a50260490eC0C1be21f9818b17` | Swap execution (stealth routing) |
+| GrimPool | [`0x0102Ba64Eefdbf362E402B9dCe0Cf9edfab611f5`](https://unichain-sepolia.blockscout.com/address/0x0102Ba64Eefdbf362E402B9dCe0Cf9edfab611f5) | Deposit pool with Merkle tree |
+| Groth16Verifier | [`0x2AAaCece42E8ec7C6066D547C81a9e7cF09dBaeA`](https://unichain-sepolia.blockscout.com/address/0x2AAaCece42E8ec7C6066D547C81a9e7cF09dBaeA) | ZK proof verification |
+| GrimSwapZK | [`0x5a01290281688BC94cA0e0EA9b3Ea7E7f98d00c4`](https://unichain-sepolia.blockscout.com/address/0x5a01290281688BC94cA0e0EA9b3Ea7E7f98d00c4) | Uniswap v4 hook (ZK) |
+
+### Ring Signature Contracts (Legacy)
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| GrimHook | [`0xA4D8EcabC2597271DDd436757b6349Ef412B80c4`](https://unichain-sepolia.blockscout.com/address/0xA4D8EcabC2597271DDd436757b6349Ef412B80c4) | Uniswap v4 hook (Ring Sig) |
+| StealthRegistry | [`0xA9e4ED4183b3B3cC364cF82dA7982D5ABE956307`](https://unichain-sepolia.blockscout.com/address/0xA9e4ED4183b3B3cC364cF82dA7982D5ABE956307) | Stealth address generation |
+| Announcer | [`0x42013A72753F6EC28e27582D4cDb8425b44fd311`](https://unichain-sepolia.blockscout.com/address/0x42013A72753F6EC28e27582D4cDb8425b44fd311) | ERC-5564 announcements |
+
+### Shared Infrastructure
+
+| Contract | Address |
+|----------|---------|
+| PoolManager | `0x00B036B58a818B1BC34d502D3fE730Db729e62AC` |
 
 ---
 
 ## Running Tests
 
 ### Prerequisites
-1. Node.js 18+
-2. Private key with Unichain Sepolia ETH
-3. Pool must have liquidity (deploy via Foundry first)
+- Node.js 18+
+- Private key with Unichain Sepolia ETH
 
 ### Install Dependencies
 ```bash
 npm install
 ```
 
-### Run Full Private Swap Test
+### Available Test Scripts
+
 ```bash
-PRIVATE_KEY=0x... npm run test:swap
+# ZK Proof Tests (Recommended)
+npm run test:zk              # Local ZK proof simulation
+npm run test:zk:onchain      # On-chain ZK proof verification
+npm run test:fullswap        # Full private swap preparation (ZK)
+npm run test:timing          # Detailed timing breakdown
+
+# Hook Deployment
+npm run deploy:hook          # Mine and deploy GrimSwapZK hook
+
+# Ring Signature Tests (Legacy)
+npm run test:swap            # Full ring signature swap
 ```
 
-**Note:** Each private key can only execute ONE private swap due to key image tracking (prevents double-spend). Use a fresh private key for each test run.
+### Run ZK Tests
 
-### Expected Output
+```bash
+# Set private key
+export PRIVATE_KEY=0x...
+
+# Run timing test
+npm run test:timing
+```
+
+### Expected Output (Timing Test)
+
 ```
 ╔════════════════════════════════════════════════════════════════╗
-║       GRIMSWAP - FULL PRIVATE SWAP TEST (SDK)                  ║
+║       GRIMSWAP - TIMING TEST                                   ║
 ╚════════════════════════════════════════════════════════════════╝
 
-Network: Unichain Sepolia (Chain ID: 1301)
-Account: 0x...
+┌────────────────────────────────────────┬──────────────┐
+│ Step                                   │ Time         │
+├────────────────────────────────────────┼──────────────┤
+│ 1. Initialize Poseidon                 │       215 ms │
+│ 2. Create deposit note                 │         3 ms │
+│ 3a. Submit deposit tx                  │      3601 ms │
+│ 3b. Wait for confirmation              │       282 ms │
+│ 4. Build Merkle tree + proof           │         5 ms │
+│ 5. Generate ZK proof                   │       956 ms │
+│ 6. On-chain verification               │       293 ms │
+│ 7. Encode hook data                    │         0 ms │
+├────────────────────────────────────────┼──────────────┤
+│ TOTAL                                  │      5355 ms │
+└────────────────────────────────────────┴──────────────┘
 
-┌────────────────────────────────────────────────────────────────┐
-│ STEP 1: Generate Stealth Keys (SDK)                           │
-└────────────────────────────────────────────────────────────────┘
-Generated stealth keys
-  Meta-address: 0x03...
+Summary:
+  Total time: 5355 ms (5.36 seconds)
+  Off-chain computation: 1472 ms
+  Blockchain wait: 3883 ms
 
-┌────────────────────────────────────────────────────────────────┐
-│ STEP 4: Generate Ring Signature (SDK - Real LSAG)             │
-└────────────────────────────────────────────────────────────────┘
-Ring signature generated
-  Signature size: 192 bytes
-  Key image: 0x...
-
-┌────────────────────────────────────────────────────────────────┐
-│ STEP 9: Verify Stealth Address Routing                        │
-└────────────────────────────────────────────────────────────────┘
-Stealth Address (from event): 0x...
-Amount sent to stealth: 9.77
-
-Sender Balances:
-  Token A after: 996122.0 (spent 10)
-  Token B after: 997132.0 (unchanged = privacy working!)
-
-Stealth Address Balance:
-  Token B: 9.77
-
-╔════════════════════════════════════════════════════════════════╗
-║          PRIVATE SWAP SUCCESSFUL - FULL PRIVACY!              ║
-╚════════════════════════════════════════════════════════════════╝
+  ZK proof generation: 956 ms
+  On-chain verification: 293 ms
+  Proof valid: true
 ```
 
 ---
 
-## Architecture
+## Architecture Comparison
+
+### ZK-SNARK (Groth16) - Recommended
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                          GRIMSWAP                               │
+│                    GrimSwap ZK Flow                             │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐ │
-│  │  Test Script│───▶│  SDK        │───▶│  Smart Contracts    │ │
-│  │  (This Repo)│    │  (grimswap- │    │  (grimswap-         │ │
-│  │             │    │   sdk)      │    │   contracts)        │ │
-│  └─────────────┘    └─────────────┘    └─────────────────────┘ │
+│   1. DEPOSIT                                                    │
+│   User ──deposit(commitment)──► GrimPool                       │
+│          (commitment = Poseidon(nullifier, secret, amount))    │
+│                                    │                            │
+│                                    ▼                            │
+│                              Merkle Tree                        │
+│                         (20 levels, ~1M deposits)               │
 │                                                                 │
-│  Test Functions:                    Contracts:                  │
-│  • generateStealthKeys()            • GrimHook (Uni v4)        │
-│  • generateRingSignature()          • RingVerifier (LSAG)      │
-│  • encodeHookData()                 • StealthRegistry          │
-│  • Execute swap via viem            • Announcer (ERC-5564)     │
+│   2. PRIVATE SWAP                                               │
+│   User ──generates proof──► ZK Proof (~1 second)               │
+│          (proves: I deposited, without revealing which one)    │
+│                                    │                            │
+│                                    ▼                            │
+│   Relayer ──submits tx──► GrimSwapZK ──verifyProof──► Verifier │
+│          (hides gas payer)    (v4 hook)                        │
+│                                    │                            │
+│                                    ▼                            │
+│                              Uniswap v4                         │
+│                                    │                            │
+│                                    ▼                            │
+│   Stealth Address ◄──tokens───────┘                            │
+│          (recipient hidden)                                     │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Privacy Flow
-1. **SDK** generates stealth keys for recipient
-2. **SDK** creates LSAG ring signature (hides sender among decoys)
-3. **SDK** encodes hook data with signature + stealth meta-address
-4. **Contract** GrimHook.beforeSwap() verifies ring signature
-5. **Contract** Uniswap v4 executes the AMM swap
-6. **Contract** GrimHook.afterSwap() generates stealth address
-7. **Contract** PoolTestHelper routes output tokens to stealth address
-8. **Contract** Announcer emits ERC-5564 announcement
-9. **Recipient** scans announcements to find incoming transfers
+**Advantages:**
+- Unlimited anonymity set (ALL depositors)
+- Lower gas cost (~250k vs ~400k)
+- Faster verification (~1 second)
+- Proven cryptography (Tornado Cash/Zcash)
 
-### What Makes It Private?
+### Ring Signatures (Legacy)
 
-**Sender Privacy (Ring Signatures):**
-- Sender proves membership in a group without revealing which member they are
-- LSAG signatures with 5-10 decoy addresses
-- Key images prevent double-spending without revealing identity
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  GrimSwap Ring Signature Flow                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   User ──creates LSAG signature──► Ring Signature              │
+│          (hides among 5-16 decoys)                             │
+│                                    │                            │
+│                                    ▼                            │
+│   Relayer ──submits tx──► GrimHook ──verifyRing──► RingVerifier│
+│                              (v4 hook)                         │
+│                                    │                            │
+│                                    ▼                            │
+│                              Uniswap v4                         │
+│                                    │                            │
+│                                    ▼                            │
+│   Stealth Address ◄──tokens───────┘                            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-**Recipient Privacy (Stealth Addresses):**
-- One-time addresses generated for each swap
-- Output tokens sent to stealth address, NOT sender's public address
-- Sender's token balance unchanged after swap
-- Only recipient can derive private key to spend from stealth address
+**Advantages:**
+- No trusted setup required
+- Simpler cryptography
 
 ---
 
-## SDK Usage Example
+## Privacy Guarantees
 
-```typescript
-import {
-  generateStealthKeys,
-  generateRingSignature,
-  encodeHookData,
-} from '@grimswap/sdk';
-
-// 1. Generate recipient's stealth keys
-const recipientKeys = generateStealthKeys();
-
-// 2. Create ring signature (hides sender)
-const { signature, keyImage } = generateRingSignature({
-  message: swapMessageHash,
-  privateKey: userPrivateKey,
-  publicKeys: ringMembers,  // 5-10 addresses
-  signerIndex: 0,
-});
-
-// 3. Encode hook data
-const hookData = encodeHookData({
-  ringSignature: signature,
-  keyImage,
-  ringMembers,
-  stealthMetaAddress: recipientKeys.stealthMetaAddress,
-});
-
-// 4. Execute swap with hookData via Uniswap v4
-// Output tokens automatically routed to stealth address!
-```
+| Feature | ZK-SNARK | Ring Signature |
+|---------|----------|----------------|
+| Anonymity Set | All depositors (~1M) | Ring members (5-16) |
+| Sender Privacy | ✅ | ✅ |
+| Recipient Privacy | ✅ (stealth address) | ✅ (stealth address) |
+| Gas Payer Privacy | ✅ (relayer) | ✅ (relayer) |
+| Double-spend Prevention | ✅ (nullifier) | ✅ (key image) |
+| Gas Cost | ~250k | ~400k |
+| Proof Time | ~1 second | ~100ms |
 
 ---
 
 ## Related Repositories
 
-- **[grimswap-sdk](https://github.com/grimswap/grimswap-sdk)** - TypeScript SDK for privacy primitives
-- **[grimswap-contracts](https://github.com/grimswap/grimswap-contracts)** - Solidity smart contracts
+- **[grimswap-contracts](../grimswap-contracts)** - Solidity smart contracts
+- **[grimswap-circuits](../grimswap-circuits)** - Circom ZK circuits and SDK
+- **[grimswap-relayer](../grimswap-relayer)** - Transaction relay service
 
 ---
 
