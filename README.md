@@ -1,95 +1,55 @@
-# GrimSwap - Integration Tests
+# GrimSwap Integration Tests
 
-End-to-end integration tests for GrimSwap privacy-preserving swaps on Uniswap v4.
+End-to-end integration tests for GrimSwap ZK private swaps on Uniswap v4.
 
-## Test Results Summary
+## Test Results
 
-### ZK-SNARK Private Swap (Groth16) - RECOMMENDED
+### Full ZK Private Swap with Relayer - FULL PRIVACY
 
-**Date:** February 3, 2026
+**Date:** February 5, 2026
 **Network:** Unichain Sepolia (Chain ID: 1301)
-**Status:** ALL TESTS PASSED
-
-#### Timing Breakdown
-
-| Step | Time |
-|------|------|
-| Initialize Poseidon | 215 ms |
-| Create deposit note | 3 ms |
-| Submit deposit tx | 3,601 ms |
-| Wait for confirmation | 282 ms |
-| Build Merkle tree + proof | 5 ms |
-| **Generate ZK proof** | **956 ms** |
-| On-chain verification | 293 ms |
-| Encode hook data | 0 ms |
-| **TOTAL** | **5,355 ms (~5.4 seconds)** |
-
-#### Transaction Proofs
+**Status:** SUCCESS
 
 | Test | TX Hash | Gas Used |
 |------|---------|----------|
-| Deposit to GrimPool | [`0x42e735ac8a4ab9957d5c5d6e5afae9c604b1258d21e894252ab4957e17af4878`](https://unichain-sepolia.blockscout.com/tx/0x42e735ac8a4ab9957d5c5d6e5afae9c604b1258d21e894252ab4957e17af4878) | 219,515 |
-| Full Swap Deposit | [`0x93ac2a94fe8b6164a2ad9ec8d1be3c4e3d22547d8d221ef0f581f251d20ab90d`](https://unichain-sepolia.blockscout.com/tx/0x93ac2a94fe8b6164a2ad9ec8d1be3c4e3d22547d8d221ef0f581f251d20ab90d) | 224,518 |
+| **ZK Swap + Relayer** | [`0x06bd555a2819c3ed0cccbf0da7822b4cf3940f2fb2dcc25b72c77a9d87ef4934`](https://unichain-sepolia.blockscout.com/tx/0x06bd555a2819c3ed0cccbf0da7822b4cf3940f2fb2dcc25b72c77a9d87ef4934) | **1,127,146** |
 
-#### Privacy Features Verified
+#### Privacy Achieved
+- **Sender**: Hidden by ZK proof (proves deposit without revealing which one)
+- **Recipient**: Hidden by stealth address
+- **Gas Payer**: Hidden by relayer (user wallet never touches chain)
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| ZK Proof Generation | PASS | Groth16 proof in ~1 second |
-| On-chain Verification | PASS | Proof verified by Groth16Verifier |
-| Poseidon Commitment | PASS | ZK-friendly hash for deposits |
-| Merkle Tree | PASS | 20 levels (supports ~1M deposits) |
-| Nullifier | PASS | Prevents double-spend |
-| Hook Data Encoding | PASS | 1,026 bytes proof for swap |
+#### Timing
+| Step | Time |
+|------|------|
+| Create deposit note | 1 ms |
+| Build Merkle tree | 5 ms |
+| Add root to GrimPool | ~13s |
+| **Generate ZK proof** | **914 ms** |
+| Relayer submission | ~5s |
+| **TOTAL** | **~23 seconds** |
 
 ---
 
-### Ring Signature Private Swap (Legacy)
+### Full ZK Private Swap (Direct)
 
-**Date:** February 2, 2026
-**Status:** PRODUCTION VERIFIED
+**Date:** February 4, 2026
+**Status:** SUCCESS
 
-#### Transaction Proof
-- **TX Hash:** [`0x1856c612da4362dc69b34d808359ab709d623d157cc83019f88b98d0ca9260a7`](https://unichain-sepolia.blockscout.com/tx/0x1856c612da4362dc69b34d808359ab709d623d157cc83019f88b98d0ca9260a7)
-- **Gas Used:** 392,918
-
-#### Privacy Verification
-```
-SENDER (public address):
-  Token A balance: 996132 → 996122 (-10 spent)
-  Token B balance: 997132 → 997132 (UNCHANGED!)
-
-STEALTH ADDRESS (0xa7f9f1296f34e768200b2a56864117cd35d700a5):
-  Token B balance: 0 → 9.77 (received from swap!)
-
->>> TOKENS ROUTED TO STEALTH ADDRESS - RECIPIENT PRIVACY VERIFIED <<<
-```
+| Test | TX Hash | Gas Used |
+|------|---------|----------|
+| **Full ZK Private Swap** | [`0xdc0532d5454ac670f08fc5b45cf55c136d755c7a4f478fe3c93024184a9871c1`](https://unichain-sepolia.blockscout.com/tx/0xdc0532d5454ac670f08fc5b45cf55c136d755c7a4f478fe3c93024184a9871c1) | **828,010** |
 
 ---
 
 ## Deployed Contracts (Unichain Sepolia)
 
-### ZK Contracts (Recommended)
-
 | Contract | Address | Description |
 |----------|---------|-------------|
-| GrimPool | [`0x0102Ba64Eefdbf362E402B9dCe0Cf9edfab611f5`](https://unichain-sepolia.blockscout.com/address/0x0102Ba64Eefdbf362E402B9dCe0Cf9edfab611f5) | Deposit pool with Merkle tree |
-| Groth16Verifier | [`0x2AAaCece42E8ec7C6066D547C81a9e7cF09dBaeA`](https://unichain-sepolia.blockscout.com/address/0x2AAaCece42E8ec7C6066D547C81a9e7cF09dBaeA) | ZK proof verification |
-| GrimSwapZK | [`0x5a01290281688BC94cA0e0EA9b3Ea7E7f98d00c4`](https://unichain-sepolia.blockscout.com/address/0x5a01290281688BC94cA0e0EA9b3Ea7E7f98d00c4) | Uniswap v4 hook (ZK) |
-
-### Ring Signature Contracts (Legacy)
-
-| Contract | Address | Description |
-|----------|---------|-------------|
-| GrimHook | [`0xA4D8EcabC2597271DDd436757b6349Ef412B80c4`](https://unichain-sepolia.blockscout.com/address/0xA4D8EcabC2597271DDd436757b6349Ef412B80c4) | Uniswap v4 hook (Ring Sig) |
-| StealthRegistry | [`0xA9e4ED4183b3B3cC364cF82dA7982D5ABE956307`](https://unichain-sepolia.blockscout.com/address/0xA9e4ED4183b3B3cC364cF82dA7982D5ABE956307) | Stealth address generation |
-| Announcer | [`0x42013A72753F6EC28e27582D4cDb8425b44fd311`](https://unichain-sepolia.blockscout.com/address/0x42013A72753F6EC28e27582D4cDb8425b44fd311) | ERC-5564 announcements |
-
-### Shared Infrastructure
-
-| Contract | Address |
-|----------|---------|
-| PoolManager | `0x00B036B58a818B1BC34d502D3fE730Db729e62AC` |
+| GrimPool | [`0xad079eAC28499c4eeA5C02D2DE1C81E56b9AA090`](https://unichain-sepolia.blockscout.com/address/0xad079eAC28499c4eeA5C02D2DE1C81E56b9AA090) | Deposit pool with Merkle tree |
+| Groth16Verifier | [`0xF7D14b744935cE34a210D7513471a8E6d6e696a0`](https://unichain-sepolia.blockscout.com/address/0xF7D14b744935cE34a210D7513471a8E6d6e696a0) | ZK proof verification |
+| GrimSwapZK | [`0x95ED348fCC232FB040e46c77C60308517e4BC0C4`](https://unichain-sepolia.blockscout.com/address/0x95ED348fCC232FB040e46c77C60308517e4BC0C4) | Uniswap v4 hook |
+| PoolHelper | [`0x26a669aC1e5343a50260490eC0C1be21f9818b17`](https://unichain-sepolia.blockscout.com/address/0x26a669aC1e5343a50260490eC0C1be21f9818b17) | Swap router |
 
 ---
 
@@ -98,75 +58,27 @@ STEALTH ADDRESS (0xa7f9f1296f34e768200b2a56864117cd35d700a5):
 ### Prerequisites
 - Node.js 18+
 - Private key with Unichain Sepolia ETH
+- For relayer test: Running relayer service
 
-### Install Dependencies
+### Install
 ```bash
 npm install
 ```
 
-### Available Test Scripts
+### Test Scripts
 
 ```bash
-# ZK Proof Tests (Recommended)
-npm run test:zk              # Local ZK proof simulation
-npm run test:zk:onchain      # On-chain ZK proof verification
-npm run test:fullswap        # Full private swap preparation (ZK)
-npm run test:timing          # Detailed timing breakdown
+# Full ZK Private Swap (direct submission)
+PRIVATE_KEY=0x... npm test
 
-# Hook Deployment
-npm run deploy:hook          # Mine and deploy GrimSwapZK hook
-
-# Ring Signature Tests (Legacy)
-npm run test:swap            # Full ring signature swap
-```
-
-### Run ZK Tests
-
-```bash
-# Set private key
-export PRIVATE_KEY=0x...
-
-# Run timing test
-npm run test:timing
-```
-
-### Expected Output (Timing Test)
-
-```
-╔════════════════════════════════════════════════════════════════╗
-║       GRIMSWAP - TIMING TEST                                   ║
-╚════════════════════════════════════════════════════════════════╝
-
-┌────────────────────────────────────────┬──────────────┐
-│ Step                                   │ Time         │
-├────────────────────────────────────────┼──────────────┤
-│ 1. Initialize Poseidon                 │       215 ms │
-│ 2. Create deposit note                 │         3 ms │
-│ 3a. Submit deposit tx                  │      3601 ms │
-│ 3b. Wait for confirmation              │       282 ms │
-│ 4. Build Merkle tree + proof           │         5 ms │
-│ 5. Generate ZK proof                   │       956 ms │
-│ 6. On-chain verification               │       293 ms │
-│ 7. Encode hook data                    │         0 ms │
-├────────────────────────────────────────┼──────────────┤
-│ TOTAL                                  │      5355 ms │
-└────────────────────────────────────────┴──────────────┘
-
-Summary:
-  Total time: 5355 ms (5.36 seconds)
-  Off-chain computation: 1472 ms
-  Blockchain wait: 3883 ms
-
-  ZK proof generation: 956 ms
-  On-chain verification: 293 ms
-  Proof valid: true
+# Full ZK Private Swap with Relayer (full privacy)
+# First start relayer: cd ../grimswap-relayer && npm run dev
+PRIVATE_KEY=0x... npm run test:relayer
 ```
 
 ---
 
-## Architecture Comparison
-
-### ZK-SNARK (Groth16) - Recommended
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -174,77 +86,42 @@ Summary:
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │   1. DEPOSIT                                                    │
-│   User ──deposit(commitment)──► GrimPool                       │
-│          (commitment = Poseidon(nullifier, secret, amount))    │
+│   User ──deposit(commitment)──► GrimPool                        │
+│          commitment = Poseidon(nullifier, secret, amount)       │
 │                                    │                            │
 │                                    ▼                            │
 │                              Merkle Tree                        │
 │                         (20 levels, ~1M deposits)               │
 │                                                                 │
 │   2. PRIVATE SWAP                                               │
-│   User ──generates proof──► ZK Proof (~1 second)               │
-│          (proves: I deposited, without revealing which one)    │
+│   User ──generates proof──► ZK Proof (~1 second)                │
+│          (proves deposit membership without revealing which)    │
 │                                    │                            │
 │                                    ▼                            │
-│   Relayer ──submits tx──► GrimSwapZK ──verifyProof──► Verifier │
-│          (hides gas payer)    (v4 hook)                        │
+│   Relayer ──submits tx──► GrimSwapZK ──verifyProof──► Verifier  │
+│          (hides gas payer)    (v4 hook)                         │
 │                                    │                            │
 │                                    ▼                            │
 │                              Uniswap v4                         │
 │                                    │                            │
 │                                    ▼                            │
-│   Stealth Address ◄──tokens───────┘                            │
+│   Stealth Address ◄──tokens───────┘                             │
 │          (recipient hidden)                                     │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Advantages:**
-- Unlimited anonymity set (ALL depositors)
-- Lower gas cost (~250k vs ~400k)
-- Faster verification (~1 second)
-- Proven cryptography (Tornado Cash/Zcash)
-
-### Ring Signatures (Legacy)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                  GrimSwap Ring Signature Flow                   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   User ──creates LSAG signature──► Ring Signature              │
-│          (hides among 5-16 decoys)                             │
-│                                    │                            │
-│                                    ▼                            │
-│   Relayer ──submits tx──► GrimHook ──verifyRing──► RingVerifier│
-│                              (v4 hook)                         │
-│                                    │                            │
-│                                    ▼                            │
-│                              Uniswap v4                         │
-│                                    │                            │
-│                                    ▼                            │
-│   Stealth Address ◄──tokens───────┘                            │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Advantages:**
-- No trusted setup required
-- Simpler cryptography
-
 ---
 
 ## Privacy Guarantees
 
-| Feature | ZK-SNARK | Ring Signature |
-|---------|----------|----------------|
-| Anonymity Set | All depositors (~1M) | Ring members (5-16) |
-| Sender Privacy | ✅ | ✅ |
-| Recipient Privacy | ✅ (stealth address) | ✅ (stealth address) |
-| Gas Payer Privacy | ✅ (relayer) | ✅ (relayer) |
-| Double-spend Prevention | ✅ (nullifier) | ✅ (key image) |
-| Gas Cost | ~250k | ~400k |
-| Proof Time | ~1 second | ~100ms |
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Sender Privacy | ✅ | ZK proof hides which deposit is being spent |
+| Recipient Privacy | ✅ | Stealth address unlinkable to user |
+| Gas Payer Privacy | ✅ | Relayer submits tx on behalf of user |
+| Double-spend Prevention | ✅ | Nullifier system prevents reuse |
+| Anonymity Set | ~1M | All depositors in Merkle tree |
 
 ---
 
